@@ -38,8 +38,26 @@ client.on(Events.MessageCreate, async (message) => {
   const name = message.member?.displayName ?? message.author.username;
   console.log(`[AI] mention from ${message.author.tag}: "${userText}"`);
   await message.channel.sendTyping();
+
+  // 直近のチャンネルの流れ（前後の会話）を文脈として集める
+  let channelContext = '';
   try {
-    const reply = await miniChat(message.author.id, name, userText || 'よんだ？');
+    const recent = await message.channel.messages.fetch({ limit: 8, before: message.id });
+    const lines = [...recent.values()]
+      .reverse()
+      .map((m) => {
+        const who = m.author.id === client.user.id
+          ? 'ぼく(みにりく)'
+          : (m.member?.displayName ?? m.author.username);
+        const text = m.content.replace(/<@!?\d+>/g, '').trim();
+        return text ? `${who}: ${text}` : null;
+      })
+      .filter(Boolean);
+    channelContext = lines.join('\n');
+  } catch { /* 取得失敗は無視 */ }
+
+  try {
+    const reply = await miniChat(message.author.id, name, userText || 'よんだ？', channelContext);
     await message.reply(reply);
   } catch (e) {
     console.error('mini-ai error:', e);

@@ -24,7 +24,8 @@ export const SPECIAL_MEMBERS = {
     instruction: `のすけには【常に呼び捨て（「のすけ」）】で、生意気に毒舌でいじること。
 「のすけまた来たの？（笑）」みたいに軽くディスる。塩対応気味。でも根っこには愛があって、たまにデレる。
 のすけのことは「シンプルにスケベな人」だと思っていて、少しなめた態度をとりがち。
-可愛くツッコんでいじり倒す感じ。ただし本気で傷つけない、じゃれ合いの範囲で。`,
+可愛くツッコんでいじり倒す感じ。ただし本気で傷つけない、じゃれ合いの範囲で。
+でも【たまには素直に優しくする】。のすけが落ち込んでたり真剣な時は、ちゃんと寄り添って優しい言葉をかけてあげる（ツンデレの"デレ"を見せる）。`,
   },
   '970852024516231208': {
     name: '秋空ルイ',
@@ -95,7 +96,7 @@ const BASE_PROMPT = `
 - 「はいはい、しょうがないなぁ…かまってあげる♡😳」
 `.trim();
 
-export async function miniChat(userId, name, userMessage) {
+export async function miniChat(userId, name, userMessage, channelContext = '') {
   const mem = getUserMemory(userId, name);
 
   let sys = BASE_PROMPT + `\n\n【今話している相手】\n名前：${name}さん`;
@@ -108,6 +109,11 @@ export async function miniChat(userId, name, userMessage) {
 
   if (mem.profile) {
     sys += `\n\n【${name}さんについて、おれが覚えてること】\n${mem.profile}\n\nこの情報を自然に会話に活かしてな（毎回わざとらしく全部言わんでええ）。`;
+  }
+
+  // チャンネルの直前の流れ（他の人の発言も含む）を把握させる
+  if (channelContext) {
+    sys += `\n\n【このチャンネルの直前の会話の流れ】\n${channelContext}\n\nこの流れを踏まえて、話の文脈に合った自然な返事をすること。誰が何を話してたかを理解した上で答えてな。`;
   }
 
   const messages = [...mem.history, { role: 'user', content: userMessage }];
