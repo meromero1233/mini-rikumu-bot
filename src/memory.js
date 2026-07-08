@@ -68,3 +68,15 @@ export function getUserMessageCount(userId) {
   if (!mem) return 0;
   return mem.history.filter((m) => m.role === 'user').length;
 }
+
+// その人の希望の呼び方を保存する
+export function setNickname(userId, nickname) {
+  const mem = store[userId];
+  if (!mem) return;
+  mem.nickname = nickname;
+  save();
+}
+
+export function getNickname(userId) {
+  return store[userId]?.nickname || null;
+}
