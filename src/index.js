@@ -31,12 +31,21 @@ const WELCOMES = [
   (m) => `${m} いらっしゃい〜🎉 ぼくみにりく！わからないことあったら聞いてね（たまにサボるけど😴）`,
 ];
 
+// にゃんちゅうだけは特別に大歓迎する
+const NYANCHU_ID = '965607187936337960';
+const NYANCHU_WELCOMES = [
+  (m) => `${m} にゃんちゅうきたああぁぁ！！！🥹🎉💕 まってたよぉ〜〜！！会えて嬉しいっ✨✨`,
+  (m) => `わあああ ${m} にゃんちゃんだ！！🐾💕 みんな見て見て、にゃんちゃん来てくれたよ！！🎉`,
+  (m) => `${m} にゃんちゃぁぁん！！🥹✨ 今日イチ嬉しい！！大好き〜〜！！💕💕`,
+];
+
 client.on(Events.GuildMemberAdd, async (member) => {
   const ch = member.guild.channels.cache.find(
     (c) => c.type === ChannelType.GuildText && c.name === CHAT_CHANNEL_NAME,
   );
   if (!ch) return;
-  const fn = WELCOMES[Math.floor(Math.random() * WELCOMES.length)];
+  const pool = member.id === NYANCHU_ID ? NYANCHU_WELCOMES : WELCOMES;
+  const fn = pool[Math.floor(Math.random() * pool.length)];
   await ch.send({
     content: fn(`<@${member.id}>`),
     allowedMentions: { users: [member.id] },
