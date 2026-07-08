@@ -9,13 +9,39 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers,
   ],
 });
+
+const CHAT_CHANNEL_NAME = process.env.CHAT_CHANNEL_NAME?.trim() || '雑談';
 
 client.once(Events.ClientReady, (c) => {
   console.log(`ログイン完了: ${c.user.tag}`);
   initMemory();
   startXMonitor(client);
+});
+
+// ─── 新メンバー参加時、雑談で歓迎する ─────────────────────────────────────────
+const WELCOMES = [
+  (m) => `${m} きたっ！！🐾✨ ようこそ〜！ぼくみにりくだよ、これから仲良くしてね💕`,
+  (m) => `わっ、新しい子だ！${m} いらっしゃい🥹 ゆっくりしてってね〜！`,
+  (m) => `${m} ようこそっ🙌 …べ、べつに歓迎したかったわけじゃないもん、ちょっとだけだよ😳✨`,
+  (m) => `${m} きてくれてありがとっ🐾💕 困ったらぼくに @ で話しかけてね！`,
+  (m) => `やっほー ${m} ！🥳 新しい仲間だ〜！みんなで仲良くしよっ✨`,
+  (m) => `${m} いらっしゃい〜🎉 ぼくみにりく！わからないことあったら聞いてね（たまにサボるけど😴）`,
+];
+
+client.on(Events.GuildMemberAdd, async (member) => {
+  const ch = member.guild.channels.cache.find(
+    (c) => c.type === ChannelType.GuildText && c.name === CHAT_CHANNEL_NAME,
+  );
+  if (!ch) return;
+  const fn = WELCOMES[Math.floor(Math.random() * WELCOMES.length)];
+  await ch.send({
+    content: fn(`<@${member.id}>`),
+    allowedMentions: { users: [member.id] },
+  }).catch((e) => console.error('welcome failed:', e.message));
+  console.log(`[welcome] ${member.user.tag} -> #${CHAT_CHANNEL_NAME}`);
 });
 
 // ─── メンションで会話 ─────────────────────────────────────────────────────────
