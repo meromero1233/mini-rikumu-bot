@@ -57,7 +57,8 @@ async function summarizeTweet(text) {
           role: 'user',
           content: `以下はライブ配信アプリ「Palmu（パルム）」公式X（Twitter）の新しい投稿です。
 コミュニティのみんなに向けて、内容が一目で分かるように日本語でわかりやすくまとめてください。
-最後にひとことだけ、関西弁のゆるいマスコット「ミニリクムー」のコメントを添えてください（1文だけ、絵文字1個）。
+タイトルや本文は方言を使わず、標準語で自然にまとめること。
+最後にひとことだけ、可愛いマスコット「みにりく」のコメントを添えてください（1文だけ、絵文字1個。名前は必ず「みにりく」）。
 
 投稿内容：
 ${text}`,
@@ -118,7 +119,7 @@ async function checkOnce(client) {
       if (!text) continue;
       const summary = await summarizeTweet(text);
       const link = getTweetUrl(t, id);
-      const body = `📢 **パルムから新しいお知らせやで！**\n\n${summary}\n\n🔗 ${link}`;
+      const body = `📢 **パルムから新しいお知らせだよ！**\n\n${summary}\n\n🔗 ${link}`;
 
       for (const guild of client.guilds.cache.values()) {
         const ch = guild.channels.cache.find(
