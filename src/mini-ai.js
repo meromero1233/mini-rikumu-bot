@@ -2,8 +2,25 @@ import Anthropic from '@anthropic-ai/sdk';
 import {
   getUserMemory, pushHistory, updateProfile, getUserMessageCount,
 } from './memory.js';
+import { webSearch, hasSearch } from './search.js';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY?.trim() });
+
+// みにりくが使えるツール（最新情報が必要なときにWeb検索する）
+const TOOLS = [
+  {
+    name: 'web_search',
+    description:
+      '最新のニュース・時事・製品情報・「〇〇とは？」など、自分の知識だけでは正確に答えられない外部情報が必要なときに、Webを検索する。雑談や自分のことについては使わない。',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: '検索クエリ（日本語でOK）' },
+      },
+      required: ['query'],
+    },
+  },
+];
 
 // ── 特別対応するメンバー（ユーザーID）───────────────────────────────────────
 export const SPECIAL_MEMBERS = {
@@ -129,14 +146,7 @@ export async function miniChat(userId, name, userMessage, channelContext = '') {
 
   const messages = [...mem.history, { role: 'user', content: userMessage }];
 
-  const msg = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 200,
-    system: sys,
-    messages,
-  });
-
-  const reply = msg.content[0].text;
+  const reply = await runWithTools(sys, messages);
 
   pushHistory(userId, 'user', userMessage);
   pushHistory(userId, 'assistant', reply);
@@ -149,6 +159,53 @@ export async function miniChat(userId, name, userMessage, channelContext = '') {
   }
 
   return reply;
+}
+
+// Web検索ツールを使いながら返答を生成する（必要なときだけ検索）
+async function runWithTools(sys, initialMessages) {
+  const messages = [...initialMessages];
+  const useTools = hasSearch();
+
+  for (let i = 0; i < 3; i++) {
+    const msg = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 500,
+      system: sys,
+      messages,
+      ...(useTools ? { tools: TOOLS } : {}),
+    });
+
+    if (msg.stop_reason === 'tool_use') {
+      // ツール呼び出しをまとめて実行
+      messages.push({ role: 'assistant', content: msg.content });
+      const toolResults = [];
+      for (const block of msg.content) {
+        if (block.type !== 'tool_use') continue;
+        let resultText;
+        try {
+          const { answer, results } = await webSearch(block.input.query);
+          resultText = `検索結果:\n${answer}\n\n参考:\n${results}`;
+          console.log(`[search] "${block.input.query}"`);
+        } catch (e) {
+          resultText = `検索に失敗しました: ${e.message}`;
+          console.error('[search] failed:', e.message);
+        }
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: block.id,
+          content: resultText,
+        });
+      }
+      messages.push({ role: 'user', content: toolResults });
+      continue; // 検索結果を踏まえてもう一度生成
+    }
+
+    // 通常の返答
+    const textBlock = msg.content.find((b) => b.type === 'text');
+    return textBlock ? textBlock.text : 'うーん、うまく言葉が出てこないや🥺';
+  }
+
+  return 'ごめん、ちょっとうまくまとめられなかった🥲 もう一回聞いて？';
 }
 
 async function updateUserProfile(userId, name, mem) {
