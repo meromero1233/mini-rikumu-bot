@@ -47,4 +47,10 @@ client.on(Events.MessageCreate, async (message) => {
   }
 });
 
-client.login(process.env.DISCORD_TOKEN?.trim());
+const token = process.env.DISCORD_TOKEN?.trim();
+console.log(`[boot] DISCORD_TOKEN present: ${!!token}, length: ${token?.length ?? 0}`);
+console.log(`[boot] env keys: ${Object.keys(process.env).filter((k) => /DISCORD|ANTHROPIC|X_|NEWS|DATA/.test(k)).join(', ')}`);
+if (!token) {
+  console.error('[boot] DISCORD_TOKEN is missing! Railwayの環境変数を確認してください。');
+}
+client.login(token);
