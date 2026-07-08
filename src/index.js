@@ -66,8 +66,7 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 const token = process.env.DISCORD_TOKEN?.trim();
-console.log(`[boot] DISCORD_TOKEN present: ${!!token}, length: ${token?.length ?? 0}`);
-console.log(`[boot] env keys: ${Object.keys(process.env).filter((k) => /DISCORD|ANTHROPIC|X_|NEWS|DATA/.test(k)).join(', ')}`);
+console.log(`[boot] Web検索(TAVILY): ${process.env.TAVILY_API_KEY ? '有効' : '無効'}`);
 if (!token) {
   console.error('[boot] DISCORD_TOKEN is missing! Railwayの環境変数を確認してください。');
 }
